@@ -13,7 +13,11 @@
 
 int backstab_load_module(void);
 void backstab_run_constructors(void);
+int backstab_egl_ensure(void);
 extern so_module g_mod_game;
+
+#define SD "com/gameloft/android/ANMP/GloftSDHM"
+#define SDSYM "Java_com_gameloft_android_ANMP_GloftSDHM_"
 
 static const char *const k_libs[] = {"libPirates.so"};
 
@@ -40,8 +44,24 @@ int port_load(const char *apk) {
 
 typedef jint (*fn_onload)(void *vm, void *reserved);
 
-/* First milestone: the library up, its constructors and JNI_OnLoad run, and
- * every Java call it makes logged (set [debug] log_java_calls = true). */
+/* A static nativeX(JNIEnv*, jclass) with no other arguments. */
+static void native_call0(const char *sym, const char *cls) {
+  void (*fn)(void *, void *) = (void (*)(void *, void *))so_try_find_addr_rx(&g_mod_game, sym);
+  if (!fn) {
+    debugPrintf("[boot] %s: MISSING\n", sym);
+    return;
+  }
+  debugPrintf("[boot] calling %s\n", sym);
+  log_flush_ring();
+  fn(g_jni_env, jni_class(cls)->obj);
+  debugPrintf("[boot] %s returned\n", sym);
+  log_flush_ring();
+}
+
+/* Second milestone: JNI_OnLoad, the GLES 2 context, then what Java's installer
+ * did before the game activity. Every Java call is logged ([debug]
+ * log_java_calls). Game / GameRenderer init come next, once their argument
+ * lists are read from the library. */
 void port_run(void) {
   jni_init();
   backstab_run_constructors();
@@ -51,6 +71,17 @@ void port_run(void) {
   } else {
     debugPrintf("[boot] no JNI_OnLoad\n");
   }
-  debugPrintf("[boot] first milestone reached: nothing runs the game yet\n");
+  log_flush_ring();
+
+  if (!backstab_egl_ensure())
+    fatal_error("No GLES 2 context could be made.\nSee debug.log.");
+  debugPrintf("[boot] GLES 2 context ready\n");
+  log_flush_ring();
+
+  native_call0(SDSYM "installer_GameInstaller_initNative", SD "/installer/GameInstaller");
+  native_call0(SDSYM "installer_GameInstaller_getPublicKey", SD "/installer/GameInstaller");
+  native_call0(SDSYM "installer_GameInstaller_nativeStart", SD "/installer/GameInstaller");
+
+  debugPrintf("[boot] second milestone reached: Game/GameRenderer init come next\n");
   log_flush_ring();
 }
