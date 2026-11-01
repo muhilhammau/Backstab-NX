@@ -1,5 +1,6 @@
 /* backstab_boot.c -- Backstab's part of the boot: setup plan, port_load, port_run. MIT. */
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <switch.h>
@@ -9,6 +10,8 @@
 #include "error.h"
 #include "jni.h"
 #include "rt_settings.h"
+#include "rt_applet.h"
+#include "rt_pad.h"
 #include "so_util.h"
 #include "util.h"
 
@@ -56,6 +59,18 @@ static void drm_allowed_outcome(void) {
   *one = 1;
   debugPrintf("[drm] guard variable %p held %p, now %p\n", (void *)guard, (void *)*guard, (void *)one);
   *guard = one;
+  {
+    static const unsigned lp[] = {0x706cdc, 0x706ce0, 0x706cfc, 0x706d00};
+    for (unsigned i = 0; i < 4; i++) {
+      int **v = (int **)((uintptr_t)g_mod_game.load_virtbase + lp[i]);
+      if (*v == NULL) {
+        int *o = (int *)malloc(sizeof *o);
+        *o = 1;
+        *v = o;
+      }
+      debugPrintf("[drm] lockPointer @+0x%x -> %p\n", lp[i], (void *)*v);
+    }
+  }
   log_flush_ring();
 }
 
@@ -77,9 +92,24 @@ static void native_call0(const char *sym, const char *cls) {
  * did before the game activity. Every Java call is logged ([debug]
  * log_java_calls). Game / GameRenderer init come next, once their argument
  * lists are read from the library. */
+static void engine_print(const char *fmt, ...) {
+  char buf[512];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof buf, fmt ? fmt : "", ap);
+  va_end(ap);
+  debugPrintf("[engine] %s\n", buf);
+}
 void port_run(void) {
   jni_init();
   backstab_run_constructors();
+  {
+    void *pp = (void *)so_try_find_addr_rx(&g_mod_game, "_ZN6glitch2os7Printer5printEPKcz");
+    if (pp) {
+      hook_arm((uintptr_t)pp, (uintptr_t)&engine_print);
+      debugPrintf("[boot] Printer::print hooked at %p\n", pp);
+    }
+  }
   fn_onload onload = (fn_onload)so_try_find_addr_rx(&g_mod_game, "JNI_OnLoad");
   if (onload) {
     debugPrintf("[boot] JNI_OnLoad -> 0x%lx\n", (unsigned long)onload(g_jni_vm, NULL));
@@ -141,20 +171,61 @@ void port_run(void) {
     if (!render) {
       debugPrintf("[boot] GameRenderer_nativeRender: MISSING\n");
     } else {
-      for (int i = 0; i < 5; i++) {
-        debugPrintf("[boot] frame %d: calling nativeRender\n", i);
-        log_flush_ring();
-        render(g_jni_env, jni_class(SD "/GameRenderer")->obj);
+      native_call0(SDSYM "Game_nativeResume", SD "/Game");
+      native_call0(SDSYM "GameGLSurfaceView_nativeResume", SD "/GameGLSurfaceView");
+      PadState pads[2];
+      rt_pad_setup(1, 1);
+      rt_pad_slot(&pads[0], 0);
+      rt_pad_slot(&pads[1], RT_PAD_HANDHELD);
+
+      void *cls = jni_class(SD "/GameRenderer")->obj;
+      unsigned long frame = 0;
+      u64 t0 = armGetSystemTick();
+      debugPrintf("[boot] entering main loop (exit: + and - together, or 45 s)\n");
+      log_flush_ring();
+
+      while (!rt_exit_requested() && appletMainLoop()) {
+        rt_applet_poll();
+        if (!rt_focused()) {
+          svcSleepThread(50000000ll);
+          continue;
+        }
+        padUpdate(&pads[0]);
+        padUpdate(&pads[1]);
+        u64 held = padGetButtons(&pads[0]) | padGetButtons(&pads[1]);
+        int combo = (held & HidNpadButton_Plus) && (held & HidNpadButton_Minus);
+        int timeout = armTicksToNs(armGetSystemTick() - t0) > 45000000000ULL;
+        if (combo || timeout) {
+          debugPrintf("[boot] leaving the loop at frame %lu (%s)\n", frame, combo ? "exit combo" : "45 s limit");
+          rt_request_exit();
+          break;
+        }
+
+        int log_it = (frame < 5) || (frame % 100000 == 0);
+        if (log_it) {
+          debugPrintf("[boot] frame %lu: calling nativeRender\n", frame);
+          log_flush_ring();
+        }
+        render(g_jni_env, cls);
         backstab_egl_swap();
-        debugPrintf("[boot] frame %d: swapped\n", i);
-        log_flush_ring();
+        if (log_it) {
+          debugPrintf("[boot] frame %lu: swapped\n", frame);
+          log_flush_ring();
+        }
+        frame++;
       }
+      rt_applet_stop();
+      debugPrintf("[boot] main loop ended after %lu frames\n", frame);
     }
   }
 
-  debugPrintf("[boot] fourth milestone reached: five frames rendered\n");
-  log_flush_ring();
-}
+  debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
+  log_flush_ring();}
+
+
+
+
+
 
 
 
