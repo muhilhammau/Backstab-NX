@@ -100,6 +100,25 @@ static void engine_print(const char *fmt, ...) {
   va_end(ap);
   debugPrintf("[engine] %s\n", buf);
 }
+static void engine_log(const char *msg, int level) {
+  debugPrintf("[engine:log%d] %s\n", level, msg ? msg : "(null)");
+}
+static void engine_logf1(const char *fmt, ...) {
+  char buf[512];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof buf, fmt ? fmt : "", ap);
+  va_end(ap);
+  debugPrintf("[engine:logf] %s\n", buf);
+}
+static void engine_logf2(int level, const char *fmt, ...) {
+  char buf[512];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof buf, fmt ? fmt : "", ap);
+  va_end(ap);
+  debugPrintf("[engine:logf%d] %s\n", level, buf);
+}
 void port_run(void) {
   jni_init();
   backstab_run_constructors();
@@ -108,6 +127,20 @@ void port_run(void) {
     if (pp) {
       hook_arm((uintptr_t)pp, (uintptr_t)&engine_print);
       debugPrintf("[boot] Printer::print hooked at %p\n", pp);
+    }
+  }
+  {
+    static const struct { const char *sym; void *fn; } hs[] = {
+      {"_ZN6glitch2os7Printer3logEPKcNS_10ELOG_LEVELE", (void *)&engine_log},
+      {"_ZN6glitch2os7Printer4logfEPKcz", (void *)&engine_logf1},
+      {"_ZN6glitch2os7Printer4logfENS_10ELOG_LEVELEPKcz", (void *)&engine_logf2},
+    };
+    for (unsigned i = 0; i < 3; i++) {
+      void *p = (void *)so_try_find_addr_rx(&g_mod_game, hs[i].sym);
+      if (p) {
+        hook_arm((uintptr_t)p, (uintptr_t)hs[i].fn);
+        debugPrintf("[boot] hooked %s\n", hs[i].sym);
+      }
     }
   }
   fn_onload onload = (fn_onload)so_try_find_addr_rx(&g_mod_game, "JNI_OnLoad");
@@ -143,7 +176,7 @@ void port_run(void) {
     } else {
       debugPrintf("[boot] calling GameRenderer_nativeInit\n");
       log_flush_ring();
-      fn(g_jni_env, jni_class(SD "/GameRenderer")->obj, 0, 1280, 720, jni_str("nx"));
+      fn(g_jni_env, jni_class(SD "/GameRenderer")->obj, 0, 1280, 720, jni_str("1.0"));
       debugPrintf("[boot] GameRenderer_nativeInit returned\n");
       log_flush_ring();
     }
@@ -221,6 +254,8 @@ void port_run(void) {
 
   debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
   log_flush_ring();}
+
+
 
 
 
