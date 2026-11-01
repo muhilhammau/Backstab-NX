@@ -1,5 +1,6 @@
 /* backstab_boot.c -- Backstab's part of the boot: setup plan, port_load, port_run. MIT. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <switch.h>
 
@@ -44,6 +45,19 @@ int port_load(const char *apk) {
 
 typedef jint (*fn_onload)(void *vm, void *reserved);
 
+/* The state GDRMPolicy.nativeAllow leaves behind on its "allowed" path: the
+ * guard variable (GOT slot 0x6ec568) holds a pointer to an int 1. Java's
+ * installer used to get there; nativeStart exits without it. */
+static void drm_allowed_outcome(void) {
+  int ***slot = (int ***)((uintptr_t)g_mod_game.load_virtbase + 0x6ec568);
+  int **guard = *slot;
+  int *one = (int *)malloc(sizeof *one);
+  *one = 1;
+  debugPrintf("[drm] guard variable %p held %p, now %p\n", (void *)guard, (void *)*guard, (void *)one);
+  *guard = one;
+  log_flush_ring();
+}
+
 /* A static nativeX(JNIEnv*, jclass) with no other arguments. */
 static void native_call0(const char *sym, const char *cls) {
   void (*fn)(void *, void *) = (void (*)(void *, void *))so_try_find_addr_rx(&g_mod_game, sym);
@@ -80,8 +94,10 @@ void port_run(void) {
 
   native_call0(SDSYM "installer_GameInstaller_initNative", SD "/installer/GameInstaller");
   native_call0(SDSYM "installer_GameInstaller_getPublicKey", SD "/installer/GameInstaller");
+  drm_allowed_outcome();
   native_call0(SDSYM "installer_GameInstaller_nativeStart", SD "/installer/GameInstaller");
 
   debugPrintf("[boot] second milestone reached: Game/GameRenderer init come next\n");
   log_flush_ring();
 }
+
