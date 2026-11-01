@@ -65,3 +65,18 @@ void b_AAsset_close(void *asset) {
   mz_free(a->data);
   free(a);
 }
+
+/* Whole entry of the APK, or NULL. Free it with backstab_apk_free(). */
+void *backstab_apk_read(const char *entry, size_t *size) {
+  void *buf = NULL;
+  size_t sz = 0;
+  mutexLock(&g_mx);
+  if (zip_open())
+    buf = mz_zip_reader_extract_file_to_heap(&g_zip, entry, &sz, 0);
+  mutexUnlock(&g_mx);
+  if (size)
+    *size = sz;
+  return buf;
+}
+
+void backstab_apk_free(void *p) { mz_free(p); }

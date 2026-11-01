@@ -119,6 +119,16 @@ static void engine_logf2(int level, const char *fmt, ...) {
   va_end(ap);
   debugPrintf("[engine:logf%d] %s\n", level, buf);
 }
+static void dump_flags(const char *tag) {
+  static const struct { const char *n; unsigned off; } g[] = {
+      {"inited", 0x6ed8f8}, {"app", 0x6ec0f8}, {"flag13a4", 0x6ec454}, {"counter13f8", 0x6ec4a8},
+      {"resume2294", 0x6ed344}, {"device", 0x6ec19c}, {"var2018", 0x6ed0c8}};
+  for (unsigned i = 0; i < sizeof g / sizeof g[0]; i++) {
+    unsigned *p = *(unsigned **)((uintptr_t)g_mod_game.load_virtbase + g[i].off);
+    debugPrintf("[flags] %s: %s = 0x%x (at %p)\n", tag, g[i].n, p ? *p : 0xdeadbeef, (void *)p);
+  }
+  log_flush_ring();
+}
 void port_run(void) {
   jni_init();
   backstab_run_constructors();
@@ -156,10 +166,10 @@ void port_run(void) {
   debugPrintf("[boot] GLES 2 context ready\n");
   log_flush_ring();
 
-  native_call0(SDSYM "installer_GameInstaller_initNative", SD "/installer/GameInstaller");
-  native_call0(SDSYM "installer_GameInstaller_getPublicKey", SD "/installer/GameInstaller");
+  // skipped, the installer is Java's DRM flow:   native_call0(SDSYM "installer_GameInstaller_initNative", SD "/installer/GameInstaller");
+  // skipped, the installer is Java's DRM flow:   native_call0(SDSYM "installer_GameInstaller_getPublicKey", SD "/installer/GameInstaller");
   drm_allowed_outcome();
-  native_call0(SDSYM "installer_GameInstaller_nativeStart", SD "/installer/GameInstaller");
+  // skipped, the installer is Java's DRM flow:   native_call0(SDSYM "installer_GameInstaller_nativeStart", SD "/installer/GameInstaller");
 
   native_call0(SDSYM "GLResLoader_nativeInit", SD "/GLResLoader");
 
@@ -204,8 +214,21 @@ void port_run(void) {
     if (!render) {
       debugPrintf("[boot] GameRenderer_nativeRender: MISSING\n");
     } else {
+      dump_flags("before Resume");
       native_call0(SDSYM "Game_nativeResume", SD "/Game");
       native_call0(SDSYM "GameGLSurfaceView_nativeResume", SD "/GameGLSurfaceView");
+      {
+        void (*fc)(void *, void *, int) = (void (*)(void *, void *, int))
+            so_try_find_addr_rx(&g_mod_game, SDSYM "Game_nativeHandleWindowFocusChanged");
+        if (fc) {
+          debugPrintf("[boot] calling nativeHandleWindowFocusChanged(1)\n");
+          log_flush_ring();
+          fc(g_jni_env, jni_class(SD "/Game")->obj, 1);
+          debugPrintf("[boot] nativeHandleWindowFocusChanged returned\n");
+          log_flush_ring();
+        } else debugPrintf("[boot] nativeHandleWindowFocusChanged: MISSING\n");
+      }
+      dump_flags("after Resume");
       PadState pads[2];
       rt_pad_setup(1, 1);
       rt_pad_slot(&pads[0], 0);
@@ -243,6 +266,7 @@ void port_run(void) {
         backstab_egl_swap();
         if (log_it) {
           debugPrintf("[boot] frame %lu: swapped\n", frame);
+          if (frame == 0) dump_flags("after frame 0");
           log_flush_ring();
         }
         frame++;
@@ -254,6 +278,8 @@ void port_run(void) {
 
   debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
   log_flush_ring();}
+
+
 
 
 
