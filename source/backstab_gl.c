@@ -14,6 +14,7 @@ EGLSurface b_eglCreateWindowSurface(EGLDisplay d, EGLConfig c, EGLNativeWindowTy
 EGLBoolean b_eglMakeCurrent(EGLDisplay d, EGLSurface dr, EGLSurface rd, EGLContext c);
 EGLBoolean b_eglSwapInterval(EGLDisplay d, EGLint i);
 EGLint b_eglGetError(void);
+EGLBoolean b_eglSwapBuffers(EGLDisplay d, EGLSurface s);
 
 static EGLDisplay g_dpy = EGL_NO_DISPLAY;
 static EGLConfig g_cfg;
@@ -50,3 +51,8 @@ int backstab_egl_ensure(void) {
     return b_eglMakeCurrent(g_dpy, g_surf, g_surf, g_ctx) == EGL_TRUE;
   return 1;
 }
+
+void backstab_egl_swap(void) {
+  b_eglSwapBuffers(g_dpy, g_surf);
+}
+

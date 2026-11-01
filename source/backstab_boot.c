@@ -15,6 +15,7 @@
 int backstab_load_module(void);
 void backstab_run_constructors(void);
 int backstab_egl_ensure(void);
+void backstab_egl_swap(void);
 extern so_module g_mod_game;
 
 #define SD "com/gameloft/android/ANMP/GloftSDHM"
@@ -120,9 +121,42 @@ void port_run(void) {
 
   native_call0(SDSYM "Game_nativeInit", SD "/Game");
 
-  debugPrintf("[boot] third milestone reached: nativeResize/nativeRender come next\n");
+  {
+    void (*resize)(void *, void *, int, int) = (void (*)(void *, void *, int, int))
+        so_try_find_addr_rx(&g_mod_game, SDSYM "GameRenderer_nativeResize");
+    if (resize) {
+      debugPrintf("[boot] calling GameRenderer_nativeResize(1280,720)\n");
+      log_flush_ring();
+      resize(g_jni_env, jni_class(SD "/GameRenderer")->obj, 1280, 720);
+      debugPrintf("[boot] GameRenderer_nativeResize returned\n");
+    } else {
+      debugPrintf("[boot] GameRenderer_nativeResize: MISSING\n");
+    }
+    log_flush_ring();
+  }
+
+  {
+    void (*render)(void *, void *) = (void (*)(void *, void *))
+        so_try_find_addr_rx(&g_mod_game, SDSYM "GameRenderer_nativeRender");
+    if (!render) {
+      debugPrintf("[boot] GameRenderer_nativeRender: MISSING\n");
+    } else {
+      for (int i = 0; i < 5; i++) {
+        debugPrintf("[boot] frame %d: calling nativeRender\n", i);
+        log_flush_ring();
+        render(g_jni_env, jni_class(SD "/GameRenderer")->obj);
+        backstab_egl_swap();
+        debugPrintf("[boot] frame %d: swapped\n", i);
+        log_flush_ring();
+      }
+    }
+  }
+
+  debugPrintf("[boot] fourth milestone reached: five frames rendered\n");
   log_flush_ring();
 }
+
+
 
 
 
