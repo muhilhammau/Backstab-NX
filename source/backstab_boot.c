@@ -129,6 +129,19 @@ static void dump_flags(const char *tag) {
   }
   log_flush_ring();
 }
+static void track_app(unsigned long frame) {
+  static int lp = -1, li = -9999, n = 0;
+  unsigned *pp = *(unsigned **)((uintptr_t)g_mod_game.load_virtbase + 0x6ec0f8);
+  if (!pp || !*pp || n >= 80) return;
+  uintptr_t app = *pp;
+  int ph = *(volatile unsigned char *)(app + 0x58);
+  int ix = *(volatile int *)(app + 0x38);
+  if (ph != lp || ix != li) {
+    debugPrintf("[app] frame %lu: phase(+0x58)=%d stackIndex(+0x38)=%d\n", frame, ph, ix);
+    log_flush_ring();
+    lp = ph; li = ix; n++;
+  }
+}
 void port_run(void) {
   jni_init();
   backstab_run_constructors();
@@ -263,6 +276,7 @@ void port_run(void) {
           log_flush_ring();
         }
         render(g_jni_env, cls);
+        track_app(frame);
         backstab_egl_swap();
         if (log_it) {
           debugPrintf("[boot] frame %lu: swapped\n", frame);
@@ -278,6 +292,7 @@ void port_run(void) {
 
   debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
   log_flush_ring();}
+
 
 
 
