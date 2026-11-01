@@ -97,7 +97,33 @@ void port_run(void) {
   drm_allowed_outcome();
   native_call0(SDSYM "installer_GameInstaller_nativeStart", SD "/installer/GameInstaller");
 
-  debugPrintf("[boot] second milestone reached: Game/GameRenderer init come next\n");
+  native_call0(SDSYM "GLResLoader_nativeInit", SD "/GLResLoader");
+
+  {
+    /* GameRenderer_nativeInit(env, thiz, a, width, height, jstring):
+       stores width/height, calls appInit(a, width, height, strdup(str)) which
+       builds the engine's Application singleton. a is unconfirmed (0, as in
+       the Gangstar reference); the string is kept short: appInit strcpy's it
+       into a 32-byte buffer. */
+    void (*fn)(void *, void *, int, int, int, void *) = (void (*)(void *, void *, int, int, int, void *))
+        so_try_find_addr_rx(&g_mod_game, SDSYM "GameRenderer_nativeInit");
+    if (!fn) {
+      debugPrintf("[boot] GameRenderer_nativeInit: MISSING\n");
+    } else {
+      debugPrintf("[boot] calling GameRenderer_nativeInit\n");
+      log_flush_ring();
+      fn(g_jni_env, jni_class(SD "/GameRenderer")->obj, 0, 1280, 720, jni_str("nx"));
+      debugPrintf("[boot] GameRenderer_nativeInit returned\n");
+      log_flush_ring();
+    }
+  }
+
+  native_call0(SDSYM "Game_nativeInit", SD "/Game");
+
+  debugPrintf("[boot] third milestone reached: nativeResize/nativeRender come next\n");
   log_flush_ring();
 }
+
+
+
 
