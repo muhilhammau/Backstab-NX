@@ -199,7 +199,7 @@ void port_run(void) {
     } else {
       debugPrintf("[boot] calling GameRenderer_nativeInit\n");
       log_flush_ring();
-      fn(g_jni_env, jni_class(SD "/GameRenderer")->obj, 0, 1280, 720, jni_str("1.0"));
+      fn(g_jni_env, jni_class(SD "/GameRenderer")->obj, 0, 1920, 1080, jni_str("1.0"));
       debugPrintf("[boot] GameRenderer_nativeInit returned\n");
       log_flush_ring();
     }
@@ -213,7 +213,7 @@ void port_run(void) {
     if (resize) {
       debugPrintf("[boot] calling GameRenderer_nativeResize(1280,720)\n");
       log_flush_ring();
-      resize(g_jni_env, jni_class(SD "/GameRenderer")->obj, 1280, 720);
+      resize(g_jni_env, jni_class(SD "/GameRenderer")->obj, 1920, 1080);
       debugPrintf("[boot] GameRenderer_nativeResize returned\n");
     } else {
       debugPrintf("[boot] GameRenderer_nativeResize: MISSING\n");
@@ -292,6 +292,7 @@ void port_run(void) {
 
   debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
   log_flush_ring();}
+
 
 
 
