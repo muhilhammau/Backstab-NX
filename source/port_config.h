@@ -13,5 +13,5 @@
    .need = (const char *const[]){"lib/armeabi-v7a/libPirates.so", NULL}, \
    .flags = RT_APK_ADOPT}
 #define RT_PAD_MAX_PLAYERS 1
+#define RT_PATH_TRACE_EXTRA ".gla"
 #endif
-

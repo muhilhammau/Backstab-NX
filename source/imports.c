@@ -95,6 +95,8 @@ extern const char sym_b_modff[] __asm__("b_modff");
 extern const char sym_b_munmap[] __asm__("b_munmap");
 extern const char sym_b_nanosleep[] __asm__("b_nanosleep");
 extern const char sym_b_open[] __asm__("b_open");
+extern int my_open(const char *path, int lflags, int mode);
+extern void *my_fopen(const char *path, const char *mode);
 extern const char sym_b_printf[] __asm__("b_printf");
 extern const char sym_b_pthread_create[] __asm__("b_pthread_create");
 extern const char sym_b_pthread_getspecific[] __asm__("b_pthread_getspecific");
@@ -259,7 +261,7 @@ DynLibFunction dcr_imports[] = {
     {"floor", (uintptr_t)sym_b_floor},
     {"floorf", (uintptr_t)sym_b_floorf},
     {"fmodf", (uintptr_t)sym_fmodf},
-    {"fopen", (uintptr_t)sym_b_fopen},
+    {"fopen", (uintptr_t)my_fopen},
     {"fprintf", (uintptr_t)sym_b_fprintf},
     {"fputc", (uintptr_t)sym_b_fputc},
     {"fputs", (uintptr_t)sym_b_fputs},
@@ -307,7 +309,7 @@ DynLibFunction dcr_imports[] = {
     {"modff", (uintptr_t)sym_b_modff},
     {"munmap", (uintptr_t)sym_b_munmap},
     {"nanosleep", (uintptr_t)sym_b_nanosleep},
-    {"open", (uintptr_t)sym_b_open},
+    {"open", (uintptr_t)my_open},
     {"pow", (uintptr_t)sym_pow},
     {"powf", (uintptr_t)sym_powf},
     {"printf", (uintptr_t)sym_b_printf},
@@ -395,3 +397,4 @@ DynLibFunction dcr_imports[] = {
 };
 
 int dcr_imports_count = (int)(sizeof(dcr_imports) / sizeof(dcr_imports[0])) - 1;
+

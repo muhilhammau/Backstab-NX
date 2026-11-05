@@ -1,5 +1,6 @@
 /* backstab_boot.c -- Backstab's part of the boot: setup plan, port_load, port_run. MIT. */
 #include <stdio.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -142,6 +143,218 @@ static void track_app(unsigned long frame) {
     lp = ph; li = ix; n++;
   }
 }
+static void touch_poll(void) {
+  static int inited = 0;
+  static void (*fn)(void *, void *, int, int, int, int);
+  static struct { u32 id; int x, y, on; } sl[2];
+  static int logged = 0;
+  if (!inited) {
+    hidInitializeTouchScreen();
+    fn = (void (*)(void *, void *, int, int, int, int))so_try_find_addr_rx(&g_mod_game, SDSYM "GameGLSurfaceView_nativeOnTouch");
+    debugPrintf("[touch] nativeOnTouch %s\n", fn ? "found" : "MISSING");
+    inited = 1;
+  }
+  if (!fn) return;
+  HidTouchScreenState st;
+  memset(&st, 0, sizeof st);
+  if (!hidGetTouchScreenStates(&st, 1)) return;
+  void *obj = jni_class(SD "/GameGLSurfaceView")->obj;
+  int seen[2] = {0, 0};
+  for (int i = 0; i < (int)st.count; i++) {
+    int x = (int)(st.touches[i].x * 1.5f), y = (int)(st.touches[i].y * 1.5f);
+    u32 fid = st.touches[i].finger_id;
+    int k = -1;
+    for (int j = 0; j < 2; j++) if (sl[j].on && sl[j].id == fid) k = j;
+    int act = 2;
+    if (k < 0) {
+      for (int j = 0; j < 2; j++) if (!sl[j].on) { k = j; break; }
+      if (k < 0) continue;
+      sl[k].on = 1; sl[k].id = fid; act = 1;
+    } else if (sl[k].x == x && sl[k].y == y) { seen[k] = 1; continue; }
+    sl[k].x = x; sl[k].y = y; seen[k] = 1;
+    if (logged < 20) { debugPrintf("[touch] act %d x %d y %d idx %d\n", act, x, y, k); logged++; }
+    fn(g_jni_env, obj, act, x, y, k);
+  }
+  for (int j = 0; j < 2; j++)
+    if (sl[j].on && !seen[j]) { fn(g_jni_env, obj, 0, sl[j].x, sl[j].y, j); sl[j].on = 0; }
+}
+static void key_poll(PadState *p0, PadState *p1) {
+  static int inited = 0, logged = 0;
+  static unsigned prev = 0;
+  static void (*kd)(void *, void *, int, int);
+  static void (*ku)(void *, void *, int, int);
+  if (!inited) {
+    kd = (void (*)(void *, void *, int, int))so_try_find_addr_rx(&g_mod_game, SDSYM "Game_nativeOnKeyDown");
+    ku = (void (*)(void *, void *, int, int))so_try_find_addr_rx(&g_mod_game, SDSYM "Game_nativeOnKeyUp");
+    debugPrintf("[key] nativeOnKeyDown %s, nativeOnKeyUp %s\n", kd ? "found" : "MISSING", ku ? "found" : "MISSING");
+    inited = 1;
+  }
+  if (!kd || !ku) return;
+  float s0[4] = {0, 0, 0, 0}, s1[4] = {0, 0, 0, 0};
+  u64 b = rt_pad_read(p0, s0) | rt_pad_read(p1, s1);
+  float sx = s0[0] != 0 ? s0[0] : s1[0], sy = s0[1] != 0 ? s0[1] : s1[1];
+  static const struct { u64 btn; int key; } map[] = {
+    {HidNpadButton_Up, 19}, {HidNpadButton_Down, 20}, {HidNpadButton_Left, 21}, {HidNpadButton_Right, 22},
+    {HidNpadButton_A, 23}, {HidNpadButton_B, 4}, {HidNpadButton_X, 99}, {HidNpadButton_Y, 100},
+    {HidNpadButton_L, 102}, {HidNpadButton_R, 103}, {HidNpadButton_Plus, 108}, {HidNpadButton_Minus, 82}};
+  unsigned cur = 0;
+  for (unsigned i = 0; i < sizeof map / sizeof map[0]; i++) if (b & map[i].btn) cur |= 1u << i;
+  if (sy > 0.5f) cur |= 1u << 0;
+  if (sy < -0.5f) cur |= 1u << 1;
+  if (sx < -0.5f) cur |= 1u << 2;
+  if (sx > 0.5f) cur |= 1u << 3;
+  void *obj = jni_class(SD "/Game")->obj;
+  for (unsigned i = 0; i < sizeof map / sizeof map[0]; i++) {
+    unsigned m = 1u << i;
+    if ((cur & m) == (prev & m)) continue;
+    int down = (cur & m) != 0;
+    if (logged < 40) { debugPrintf("[key] %s key %d\n", down ? "down" : "up", map[i].key); logged++; }
+    (down ? kd : ku)(g_jni_env, obj, map[i].key, 0);
+  }
+  prev = cur;
+}static void pad_touch(PadState *p0, PadState *p1) {
+  static int inited = 0, sdown = 0, bdown = 0, lx = 0, ly = 0, logged = 0;
+  static void (*fn)(void *, void *, int, int, int, int);
+  if (!inited) {
+    fn = (void (*)(void *, void *, int, int, int, int))so_try_find_addr_rx(&g_mod_game, SDSYM "GameGLSurfaceView_nativeOnTouch");
+    inited = 1;
+  }
+  if (!fn) return;
+  float s0[4] = {0, 0, 0, 0}, s1[4] = {0, 0, 0, 0};
+  u64 b = rt_pad_read(p0, s0) | rt_pad_read(p1, s1);
+  float sx = s0[0] != 0 ? s0[0] : s1[0], sy = s0[1] != 0 ? s0[1] : s1[1];
+  if (b & HidNpadButton_Left) sx = -1.0f;
+  if (b & HidNpadButton_Right) sx = 1.0f;
+  if (b & HidNpadButton_Up) sy = 1.0f;
+  if (b & HidNpadButton_Down) sy = -1.0f;
+  float mg = __builtin_sqrtf(sx * sx + sy * sy); if (mg > 1.0f) { sx /= mg; sy /= mg; } int active = (sx * sx + sy * sy) > 0.16f;
+  void *obj = jni_class(SD "/GameGLSurfaceView")->obj;
+  const int CX = 228, CY = 770, R = 220, BX = 1725, BY = 960;
+  if (active) {
+    int x = CX + (int)(sx * R), y = CY - (int)(sy * R); if (x < 8) x = 8; if (y < 8) y = 8; if (x > 1912) x = 1912; if (y > 1072) y = 1072;
+    if (!sdown) {
+      fn(g_jni_env, obj, 1, CX, CY, 2);
+      sdown = 1; lx = CX; ly = CY;
+      if (logged < 6) { debugPrintf("[padtouch] stick down\n"); logged++; }
+    }
+    if (x != lx || y != ly) { fn(g_jni_env, obj, 2, x, y, 2); lx = x; ly = y; }
+  } else if (sdown) {
+    fn(g_jni_env, obj, 0, lx, ly, 2);
+    sdown = 0;
+    if (logged < 6) { debugPrintf("[padtouch] stick up\n"); logged++; }
+  }
+  { static int b2down_; int w = (b & (HidNpadButton_B | HidNpadButton_X)) != 0; if (w && !b2down_) { fn(g_jni_env, obj, 1, 1540, 757, 4); b2down_ = 1; } else if (!w && b2down_) { fn(g_jni_env, obj, 0, 1540, 757, 4); b2down_ = 0; } }
+  int atk = (b & (HidNpadButton_A | HidNpadButton_R)) != 0;
+  if (atk && !bdown) {
+    fn(g_jni_env, obj, 1, BX, BY, 3); bdown = 1;
+    if (logged < 6) { debugPrintf("[padtouch] attack down\n"); logged++; }
+  } else if (!atk && bdown) {
+    fn(g_jni_env, obj, 0, BX, BY, 3); bdown = 0;
+  }
+}static void pad_extra(PadState *p0, PadState *p1) {
+  static int inited = 0, zdown = 0, camdown = 0, cx = 1400, cy = 400, logged = 0;
+  static void (*fn)(void *, void *, int, int, int, int);
+  if (!inited) {
+    fn = (void (*)(void *, void *, int, int, int, int))so_try_find_addr_rx(&g_mod_game, SDSYM "GameGLSurfaceView_nativeOnTouch");
+    inited = 1;
+  }
+  if (!fn) return;
+  float s0[4] = {0, 0, 0, 0}, s1[4] = {0, 0, 0, 0};
+  u64 b = rt_pad_read(p0, s0) | rt_pad_read(p1, s1);
+  float rx = s0[2] != 0 ? s0[2] : s1[2], ry = s0[3] != 0 ? s0[3] : s1[3];
+  void *obj = jni_class(SD "/GameGLSurfaceView")->obj;
+  int z = (b & (HidNpadButton_ZL | HidNpadButton_ZR)) != 0;
+  if (z && !zdown) {
+    fn(g_jni_env, obj, 1, 1440, 960, 5); zdown = 1;
+    if (logged < 6) { debugPrintf("[padtouch] aim/shoot down\n"); logged++; }
+  } else if (!z && zdown) {
+    fn(g_jni_env, obj, 0, 1440, 960, 5); zdown = 0;
+  }
+  float mg = __builtin_sqrtf(rx * rx + ry * ry);
+  if (mg > 0.2f) {
+    if (!camdown) {
+      cx = 1400; cy = 400;
+      fn(g_jni_env, obj, 1, cx, cy, 6); camdown = 1;
+      if (logged < 6) { debugPrintf("[padtouch] camera down\n"); logged++; }
+    }
+    cx -= (int)(rx * 22.0f); cy += (int)(ry * 22.0f);
+    int out = (cx < 1000 || cx > 1850 || cy < 150 || cy > 650);
+    if (cx < 1000) cx = 1000; if (cx > 1850) cx = 1850;
+    if (cy < 150) cy = 150; if (cy > 650) cy = 650;
+    if (out) { fn(g_jni_env, obj, 0, cx, cy, 6); camdown = 0; }
+    else fn(g_jni_env, obj, 2, cx, cy, 6);
+  } else if (camdown) {
+    fn(g_jni_env, obj, 0, cx, cy, 6); camdown = 0;
+  }
+}
+
+#define CAM_INVERT_Y 1
+#define CAM_SENS 0.35f
+#define LS_X 242
+#define LS_Y 850
+#define LS_R 154
+#define RS_X 1324
+#define RS_Y 474
+#define RS_R 84
+
+static void pad_poll(PadState *p0, PadState *p1) {
+  static void (*fn)(void *, void *, int, int, int, int);
+  static int inited = 0, lon = 0, ron = 0, lx0 = -1, ly0 = -1, rx0 = -1, ry0 = -1, logged = 0;
+  static u64 prev = 0;
+  static const struct { u64 btn; int x, y, id; } map[] = {
+      {HidNpadButton_B, 1540, 762, 21},  /* lompat */
+      {HidNpadButton_X, 1760, 630, 22},  /* meriam */
+      {HidNpadButton_Y, 1724, 972, 23},  /* pedang */
+      {HidNpadButton_ZL, 1440, 970, 24}, /* bidik */
+      {HidNpadButton_L, 1440, 970, 24},
+      {HidNpadButton_A, 1725, 960, 25},  /* serang */
+      {HidNpadButton_R, 1725, 960, 25},
+  };
+  if (!inited) {
+    fn = (void (*)(void *, void *, int, int, int, int))so_try_find_addr_rx(&g_mod_game, SDSYM "GameGLSurfaceView_nativeOnTouch");
+    inited = 1;
+  }
+  if (!fn) return;
+  void *obj = jni_class(SD "/GameGLSurfaceView")->obj;
+  u64 held = padGetButtons(p0) | padGetButtons(p1);
+  u64 down = held & ~prev, up = ~held & prev;
+  for (unsigned i = 0; i < sizeof map / sizeof map[0]; i++) {
+    if (down & map[i].btn) {
+      if (logged < 30) { debugPrintf("[pad] down id %d\n", map[i].id); logged++; }
+      fn(g_jni_env, obj, 1, map[i].x, map[i].y, map[i].id);
+    }
+    if (up & map[i].btn) fn(g_jni_env, obj, 0, map[i].x, map[i].y, map[i].id);
+  }
+  prev = held;
+
+  HidAnalogStickState a = padGetStickPos(p0, 0), b = padGetStickPos(p1, 0);
+  if (abs(b.x) + abs(b.y) > abs(a.x) + abs(a.y)) a = b;
+  float lx = a.x / 32767.0f, ly = a.y / 32767.0f;
+  float lm = sqrtf(lx * lx + ly * ly);
+  if (lm > 0.2f) {
+    if (lm > 1.0f) { lx /= lm; ly /= lm; }
+    int tx = LS_X + (int)(lx * LS_R), ty = LS_Y - (int)(ly * LS_R);
+    if (!lon) { fn(g_jni_env, obj, 1, LS_X, LS_Y, 11); lon = 1; }
+    if (tx != lx0 || ty != ly0) { fn(g_jni_env, obj, 2, tx, ty, 11); lx0 = tx; ly0 = ty; }
+  } else if (lon) {
+    fn(g_jni_env, obj, 0, lx0, ly0, 11); lon = 0; lx0 = ly0 = -1;
+  }
+
+  HidAnalogStickState c = padGetStickPos(p0, 1), d = padGetStickPos(p1, 1);
+  if (abs(d.x) + abs(d.y) > abs(c.x) + abs(c.y)) c = d;
+  float rx = c.x / 32767.0f, ry = c.y / 32767.0f;
+  float rm = sqrtf(rx * rx + ry * ry);
+  if (ron) { fn(g_jni_env, obj, 0, rx0, ry0, 12); ron = 0; }
+  if (rm > 0.2f) {
+    if (rm > 1.0f) { rx /= rm; ry /= rm; }
+    float sy = CAM_INVERT_Y ? ry : -ry;
+    rx0 = RS_X + (int)(rx * CAM_SENS * RS_R);
+    ry0 = RS_Y + (int)(sy * CAM_SENS * RS_R);
+    fn(g_jni_env, obj, 1, RS_X, RS_Y, 12);
+    fn(g_jni_env, obj, 2, rx0, ry0, 12);
+    ron = 1;
+  }
+}
 void port_run(void) {
   jni_init();
   backstab_run_constructors();
@@ -263,7 +476,7 @@ void port_run(void) {
         padUpdate(&pads[1]);
         u64 held = padGetButtons(&pads[0]) | padGetButtons(&pads[1]);
         int combo = (held & HidNpadButton_Plus) && (held & HidNpadButton_Minus);
-        int timeout = armTicksToNs(armGetSystemTick() - t0) > 45000000000ULL;
+        int timeout = 0; (void)t0;
         if (combo || timeout) {
           debugPrintf("[boot] leaving the loop at frame %lu (%s)\n", frame, combo ? "exit combo" : "45 s limit");
           rt_request_exit();
@@ -275,6 +488,11 @@ void port_run(void) {
           debugPrintf("[boot] frame %lu: calling nativeRender\n", frame);
           log_flush_ring();
         }
+        /* key_poll(&pads[0], &pads[1]); */
+        /* pad_touch(&pads[0], &pads[1]); */
+        /* pad_extra(&pads[0], &pads[1]); */
+        touch_poll();
+        pad_poll(&pads[0], &pads[1]);
         render(g_jni_env, cls);
         track_app(frame);
         backstab_egl_swap();
@@ -292,6 +510,18 @@ void port_run(void) {
 
   debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
   log_flush_ring();}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
