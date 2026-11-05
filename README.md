@@ -23,12 +23,12 @@ An unofficial Nintendo Switch wrapper/port of Gameloft's Android game.
 
 The supported game build is:
 
-`	ext
+```	ext
 Package:      com.gameloft.android.GAND.GloftBSBH
 Version:      1.0.0
 Version code: 100
 ABI:          armeabi-v7a / AArch32
-`
+```
 
 The original ARM game library runs directly inside a 32-bit Horizon OS process. Players must provide their own APK and game data files (gameloft/games/GloftBSBH/); these are not included in the repository or release download.
 
