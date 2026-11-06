@@ -147,11 +147,11 @@ sd:/switch/backstab_nx/
 
 - Move the **Right Stick** or **D-Pad** to reveal the yellow selection cursor.
 - Press **A** to execute a touch tap at the cursor's location.
-- Button positions can be modified by creating \uttons.txt\ inside \/switch/backstab_nx/\ (refer to \uttons.example.txt\).
+- Button positions can be modified by creating `uttons.txt` inside `/switch/backstab_nx/` (refer to `uttons.example.txt`).
 
 ## File Structure & Saves
 
-The application directory is located under \sd:/switch/backstab_nx/\:
+The application directory is located under `sd:/switch/backstab_nx/`:
 
 ```	ext
 data/              Android internal storage and native saves
@@ -171,11 +171,11 @@ crash.log          Crash diagnostics output
 ### Requirements
 
 - Docker with Linux container support.
-- [vita2hos runtime](https://github.com/vita2hos/vita2hos) in \
-untime/\ (Git submodule).
+- [vita2hos runtime](https://github.com/vita2hos/vita2hos) in 
+`runtime` (Git submodule).
 - [libnx32](https://github.com/aks796/libnx32) prefix (version 4.12.0 or newer) — clone next to this repo.
-- [mesa32](https://github.com/aks796/mesa32) in \portlibs32/\.
-- devkitPro \devkita64\ for launcher compilation.
+- [mesa32](https://github.com/aks796/mesa32) in `portlibs32`.
+- devkitPro `devkita64` for launcher compilation.
 
 ### Build steps
 
@@ -194,8 +194,8 @@ cd launcher
 ```
 
 The compiled binaries will be located at:
-- \ackstab_nx.nsp\ — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
-- \launcher/backstab_nx.nro\ — 64-bit launcher (runs via HBLoader/sphaira)
+- `ackstab_nx.nsp` — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
+- `launcher/backstab_nx.nro` — 64-bit launcher (runs via HBLoader/sphaira)
 
 ## Credits
 
@@ -208,4 +208,4 @@ The compiled binaries will be located at:
 
 ## License
 
-The port code is licensed under MIT (see \LICENSE\). Game assets and binaries remain the property of their respective owners.
+The port code is licensed under MIT (see `LICENSE`). Game assets and binaries remain the property of their respective owners.
