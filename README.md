@@ -194,7 +194,7 @@ cd launcher
 ```
 
 The compiled binaries will be located at:
-- `ackstab_nx.nsp` — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
+- `Backstab_nx.nsp` — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
 - `launcher/backstab_nx.nro` — 64-bit launcher (runs via HBLoader/sphaira)
 
 ## Credits
