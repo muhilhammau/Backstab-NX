@@ -58,7 +58,7 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 - Native checkpoint saves and settings persistence.
 - Audio playback via android32 AudioTrack / OpenSL ES driver (WIP).
 - Custom **PVRTC 2bpp/4bpp → RGBA8 decoder** (Mesa32 lacks PVRTC support).
-- GL shader logging/debug via \ackstab_glslog.c\ (samplerCube fix).
+- GL shader logging/debug via `Backstab_glslog.c` (samplerCube fix).
 - 64-bit NRO launcher carrying the 32-bit payload with sphaira HOME-menu forwarder support.
 
 ## Installation
@@ -70,7 +70,7 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 - Your own supported **v1.2.8d (latest) ARMv7 APK** (com.gameloft.android.GAND.GloftBSBH).
 - Extracted game data files (GLA archives, saves, etc.).
 
-Copy the `switch\` folder to the root of your SD card. Ensure the game files are placed according to the layout below:
+Copy the `switch` folder to the root of your SD card. Ensure the game files are placed according to the layout below:
 
 ```	ext
 sd:/switch/backstab_nx/
