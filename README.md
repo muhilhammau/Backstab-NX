@@ -1,6 +1,6 @@
-<div align="center">
+<div align=\"center\">
 
-<img src="launcher/icon.jpg" alt="Backstab HD" width="180">
+<img src=\"launcher/icon.jpg\" alt=\"Backstab HD\" width=\"180\">
 
 # backstab_nx
 
@@ -19,18 +19,18 @@ An unofficial Nintendo Switch wrapper/port of Gameloft's Android game.
 
 ## About
 
-ackstab_nx runs the original 32-bit Android version of **Backstab HD** (also known as **Assassin's Creed Pirates**) on Nintendo Switch, using the open-source [vita2hos](https://github.com/vita2hos) toolchain and [android32](https://github.com/aks796/android32) runtime.
+\ackstab_nx\ runs the original 32-bit Android version of **Backstab HD** (also known as **Assassin's Creed Pirates**) on Nintendo Switch, using the open-source [vita2hos](https://github.com/vita2hos) toolchain and [android32](https://github.com/aks796/android32) runtime.
 
 The supported game build is:
 
-`	ext
+\\\	ext
 Package:      com.gameloft.android.GAND.GloftBSBH
 Version:      1.0.0
 Version code: 100
 ABI:          armeabi-v7a / AArch32
-`
+\\\
 
-The original ARM game library runs directly inside a 32-bit Horizon OS process. Players must provide their own APK and game data files (gameloft/games/GloftBSBH/); these are not included in the repository or release download.
+The original ARM game library runs directly inside a 32-bit Horizon OS process. Players must provide their own APK and game data files; these are not included in the repository or release download.
 
 **No game files are included.** You need your own copy of the game's APK. This project is not affiliated with or endorsed by Gameloft, Ubisoft, or Nintendo.
 
@@ -54,11 +54,11 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 - Original Android **1.0.0** game running natively in AArch32 on Switch.
 - **1280 × 720** widescreen presentation with touchscreen and gamepad integration.
 - Dynamic cursor navigation for touch-oriented menus (Right Stick / D-Pad + A button).
-- Direct game SD data mounting (gameloft/games/GloftBSBH/).
+- Direct game data mounting from SD card (xternal/files/).
 - Native checkpoint saves and settings persistence.
 - Audio playback via android32 AudioTrack / OpenSL ES driver (WIP).
 - Custom **PVRTC 2bpp/4bpp → RGBA8 decoder** (Mesa32 lacks PVRTC support).
-- GL shader logging/debug via ackstab_glslog.c (samplerCube fix).
+- GL shader logging/debug via \ackstab_glslog.c\ (samplerCube fix).
 - 64-bit NRO launcher carrying the 32-bit payload with sphaira HOME-menu forwarder support.
 
 ## Installation
@@ -67,32 +67,61 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 
 - A Nintendo Switch running Atmosphère custom firmware.
 - [sphaira](https://github.com/ITotalJustice/sphaira) for installing the HOME-menu forwarder.
-- Your own supported **1.0.0 ARMv7 APK** (com.gameloft.android.GAND.GloftBSBH).
-- Extracted Gameloft SD data folder (GloftBSBH).
+- Your own supported **1.0.0 ARMv7 APK** (\com.gameloft.android.GAND.GloftBSBH\).
+- Extracted game data files (GLA archives, saves, etc.).
 
-Copy the switch/ folder to the root of your SD card. Ensure the game files are placed according to the layout below:
+Copy the \switch/\ folder to the root of your SD card. Ensure the game files are placed according to the layout below:
 
-`	ext
+\\\	ext
 sd:/switch/backstab_nx/
 ├── backstab_nx.nro
-├── Backstab-HD.apk
-└── gameloft/
-    └── games/
-        └── GloftBSBH/
-            ├── anims/
-            ├── collisions/
-            ├── datalibs/
-            ├── levels/
-            ├── models/
-            ├── music/
-            ├── shaders/
-            ├── text/
-            ├── textures/
-            ├── videos/
-            ├── oconf.bar
-            ├── sound.pack
-            └── states
-`
+├── game.apk
+├── libPirates.so
+├── title_id.txt
+├── classes.txt
+├── config.ini
+├── .setup
+├── data/
+│   ├── cache/
+│   ├── files/
+│   └── shared_prefs/
+└── external/
+    ├── cache/
+    └── files/
+        ├── actors.gla
+        ├── cinematics.gla
+        ├── commons.gla
+        ├── effects.gla
+        ├── game_config.gla
+        ├── globalsave0.dat
+        ├── globalsaveli0.dat
+        ├── intro.mp4
+        ├── location_001_britishcityfort.gla
+        ├── location_002_spanishcity.gla
+        ├── location_003_piratecity.gla
+        ├── location_004_jungle_01.gla
+        ├── location_005_vulcanocity.gla
+        ├── location_007_britishcity.gla
+        ├── location_008_openworld.gla
+        ├── location_010_islands.gla
+        ├── location_011_islands.gla
+        ├── location_012_islands.gla
+        ├── location_017_jungle_02.gla
+        ├── location_018_piratecity2.gla
+        ├── location_019_jungle_03.gla
+        ├── location_020_britishcity2.gla
+        ├── location_900_testfps.gla
+        ├── location_901_testfps2.gla
+        ├── particlesystems.gla
+        ├── save0.dat
+        ├── saveli0.dat
+        ├── settings.dat
+        ├── sounds.xml
+        ├── sounds.zip
+        ├── sprites_1920x1080.gla
+        ├── strings.gla
+        └── trophy.dat
+\\\
 
 ### First launch
 
@@ -118,34 +147,38 @@ sd:/switch/backstab_nx/
 
 - Move the **Right Stick** or **D-Pad** to reveal the yellow selection cursor.
 - Press **A** to execute a touch tap at the cursor's location.
-- Button positions can be modified by creating uttons.txt inside /switch/backstab_nx/ (refer to uttons.example.txt).
+- Button positions can be modified by creating \uttons.txt\ inside \/switch/backstab_nx/\ (refer to \uttons.example.txt\).
 
 ## File Structure & Saves
 
-The application directory is located under sd:/switch/backstab_nx/:
+The application directory is located under \sd:/switch/backstab_nx/\:
 
-`	ext
+\\\	ext
 data/              Android internal storage and native saves
-gameloft/          Gameloft shared data (gameloft/games/GloftBSBH/)
-sdcard/            Android external storage root
-buttons.txt        Custom button mapping overrides
+external/          Game data (GLA archives, saves, sounds, configs)
+game.apk           Game APK (com.gameloft.android.GAND.GloftBSBH)
+libPirates.so      Native game library
+title_id.txt       Title ID (0x0100000000001040)
+classes.txt        Java class mappings
+config.ini         Runtime configuration
 debug.log          Current execution log
 crash.log          Crash diagnostics output
-`
+.setup             Setup completion marker
+\\\
 
 ## Building
 
 ### Requirements
 
 - Docker with Linux container support.
-- [vita2hos runtime](https://github.com/vita2hos/vita2hos) in untime/ (Git submodule).
+- [vita2hos runtime](https://github.com/vita2hos/vita2hos) in \untime/\ (Git submodule).
 - [libnx32](https://github.com/aks796/libnx32) prefix (version 4.12.0 or newer) — clone next to this repo.
-- [mesa32](https://github.com/aks796/mesa32) in portlibs32/.
-- devkitPro devkita64 for launcher compilation.
+- [mesa32](https://github.com/aks796/mesa32) in \portlibs32/\.
+- devkitPro \devkita64\ for launcher compilation.
 
 ### Build steps
 
-`powershell
+\\\powershell
 # Clone libnx32 next to this repo
 git clone https://github.com/aks796/libnx32 ../libnx32
 cd ../libnx32 && ./build.sh
@@ -157,11 +190,11 @@ cd ../Backstab-NX
 # Build the launcher NRO (64-bit)
 cd launcher
 ./build.sh
-`
+\\\
 
 The compiled binaries will be located at:
-- ackstab_nx.nsp — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
-- launcher/backstab_nx.nro — 64-bit launcher (runs via HBLoader/sphaira)
+- \ackstab_nx.nsp\ — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
+- \launcher/backstab_nx.nro\ — 64-bit launcher (runs via HBLoader/sphaira)
 
 ## Credits
 
@@ -174,4 +207,4 @@ The compiled binaries will be located at:
 
 ## License
 
-The port code is licensed under MIT (see LICENSE). Game assets and binaries remain the property of their respective owners.
+The port code is licensed under MIT (see \LICENSE\). Game assets and binaries remain the property of their respective owners.
