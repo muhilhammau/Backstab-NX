@@ -143,11 +143,6 @@ sd:/switch/backstab_nx/
 | **+** | Pause / Game menu |
 | **Touchscreen** | Native touch controls |
 
-### Cursor / Navigation
-
-- Move the **Right Stick** or **D-Pad** to reveal the yellow selection cursor.
-- Press **A** to execute a touch tap at the cursor's location.
-- Button positions can be modified by creating `Buttons.txt` inside `/switch/backstab_nx/` (refer to `Buttons.example.txt`).
 
 ## File Structure & Saves
 
