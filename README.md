@@ -147,7 +147,7 @@ sd:/switch/backstab_nx/
 
 - Move the **Right Stick** or **D-Pad** to reveal the yellow selection cursor.
 - Press **A** to execute a touch tap at the cursor's location.
-- Button positions can be modified by creating `uttons.txt` inside `/switch/backstab_nx/` (refer to `uttons.example.txt`).
+- Button positions can be modified by creating `Buttons.txt` inside `/switch/backstab_nx/` (refer to `Buttons.example.txt`).
 
 ## File Structure & Saves
 
