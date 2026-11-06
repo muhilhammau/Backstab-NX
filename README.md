@@ -1,6 +1,6 @@
-<div align=\"center\">
+<div align="center">
 
-<img src=\"launcher/icon.jpg\" alt=\"Backstab HD\" width=\"180\">
+<img src="launcher/icon.jpg" alt="Backstab HD" width="180">
 
 # backstab_nx
 
@@ -19,16 +19,16 @@ An unofficial Nintendo Switch wrapper/port of Gameloft's Android game.
 
 ## About
 
-\ackstab_nx\ runs the original 32-bit Android version of **Backstab HD** (also known as **Assassin's Creed Pirates**) on Nintendo Switch, using the open-source [vita2hos](https://github.com/vita2hos) toolchain and [android32](https://github.com/aks796/android32) runtime.
+`Backstab_nx` runs the original 32-bit Android version of **Backstab HD** (also known as **Assassin's Creed Pirates**) on Nintendo Switch, using the open-source [vita2hos](https://github.com/vita2hos) toolchain and [android32](https://github.com/aks796/android32) runtime.
 
 The supported game build is:
 
-\\\	ext
+```ext
 Package:      com.gameloft.android.GAND.GloftBSBH
 Version:      1.0.0
 Version code: 100
 ABI:          armeabi-v7a / AArch32
-\\\
+```
 
 The original ARM game library runs directly inside a 32-bit Horizon OS process. Players must provide their own APK and game data files; these are not included in the repository or release download.
 
@@ -70,9 +70,9 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 - Your own supported **1.0.0 ARMv7 APK** (\com.gameloft.android.GAND.GloftBSBH\).
 - Extracted game data files (GLA archives, saves, etc.).
 
-Copy the \switch/\ folder to the root of your SD card. Ensure the game files are placed according to the layout below:
+Copy the `switch\` folder to the root of your SD card. Ensure the game files are placed according to the layout below:
 
-\\\	ext
+```	ext
 sd:/switch/backstab_nx/
 ├── backstab_nx.nro
 ├── game.apk
@@ -121,7 +121,7 @@ sd:/switch/backstab_nx/
         ├── sprites_1920x1080.gla
         ├── strings.gla
         └── trophy.dat
-\\\
+```
 
 ### First launch
 
@@ -153,7 +153,7 @@ sd:/switch/backstab_nx/
 
 The application directory is located under \sd:/switch/backstab_nx/\:
 
-\\\	ext
+```	ext
 data/              Android internal storage and native saves
 external/          Game data (GLA archives, saves, sounds, configs)
 game.apk           Game APK (com.gameloft.android.GAND.GloftBSBH)
@@ -164,21 +164,22 @@ config.ini         Runtime configuration
 debug.log          Current execution log
 crash.log          Crash diagnostics output
 .setup             Setup completion marker
-\\\
+```
 
 ## Building
 
 ### Requirements
 
 - Docker with Linux container support.
-- [vita2hos runtime](https://github.com/vita2hos/vita2hos) in \untime/\ (Git submodule).
+- [vita2hos runtime](https://github.com/vita2hos/vita2hos) in \
+untime/\ (Git submodule).
 - [libnx32](https://github.com/aks796/libnx32) prefix (version 4.12.0 or newer) — clone next to this repo.
 - [mesa32](https://github.com/aks796/mesa32) in \portlibs32/\.
 - devkitPro \devkita64\ for launcher compilation.
 
 ### Build steps
 
-\\\powershell
+```powershell
 # Clone libnx32 next to this repo
 git clone https://github.com/aks796/libnx32 ../libnx32
 cd ../libnx32 && ./build.sh
@@ -190,7 +191,7 @@ cd ../Backstab-NX
 # Build the launcher NRO (64-bit)
 cd launcher
 ./build.sh
-\\\
+```
 
 The compiled binaries will be located at:
 - \ackstab_nx.nsp\ — 32-bit wrapper (installable via DBI/Goldleaf/Tinfoil)
