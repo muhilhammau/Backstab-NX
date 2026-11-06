@@ -54,7 +54,7 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 - Original Android **1.0.0** game running natively in AArch32 on Switch.
 - **1280 × 720** widescreen presentation with touchscreen and gamepad integration.
 - Dynamic cursor navigation for touch-oriented menus (Right Stick / D-Pad + A button).
-- Direct game data mounting from SD card (xternal/files/).
+- Direct game data mounting from SD card (`external/files`).
 - Native checkpoint saves and settings persistence.
 - Audio playback via android32 AudioTrack / OpenSL ES driver (WIP).
 - Custom **PVRTC 2bpp/4bpp → RGBA8 decoder** (Mesa32 lacks PVRTC support).
