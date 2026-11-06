@@ -10,7 +10,7 @@ An unofficial Nintendo Switch wrapper/port of Gameloft's Android game.
 
 [![Switch](https://img.shields.io/badge/Nintendo_Switch-Homebrew-E60012?style=for-the-badge&logo=nintendoswitch&logoColor=white)](#installation)
 [![Version](https://img.shields.io/badge/version-v0.1.0-4C8BF5?style=for-the-badge)](#)
-[![Android](https://img.shields.io/badge/Android-1.0.0-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#about)
+[![Android](https://img.shields.io/badge/Android-v1.2.8d-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#about)
 [![AArch32](https://img.shields.io/badge/AArch32-32--bit-0091BD?style=for-the-badge&logo=arm&logoColor=white)](#building)
 
 </div>
@@ -25,8 +25,8 @@ The supported game build is:
 
 ```ext
 Package:      com.gameloft.android.GAND.GloftBSBH
-Version:      1.0.0
-Version code: 100
+Version:      v1.2.8d (latest)
+Version code: 128
 ABI:          armeabi-v7a / AArch32
 ```
 
@@ -67,7 +67,7 @@ The original ARM game library runs directly inside a 32-bit Horizon OS process. 
 
 - A Nintendo Switch running Atmosphère custom firmware.
 - [sphaira](https://github.com/ITotalJustice/sphaira) for installing the HOME-menu forwarder.
-- Your own supported **1.0.0 ARMv7 APK** (\com.gameloft.android.GAND.GloftBSBH\).
+- Your own supported **v1.2.8d (latest) ARMv7 APK** (\com.gameloft.android.GAND.GloftBSBH\).
 - Extracted game data files (GLA archives, saves, etc.).
 
 Copy the `switch\` folder to the root of your SD card. Ensure the game files are placed according to the layout below:
