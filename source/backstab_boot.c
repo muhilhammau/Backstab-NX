@@ -20,6 +20,7 @@ int backstab_load_module(void);
 void backstab_run_constructors(void);
 int backstab_egl_ensure(void);
 void backstab_egl_swap(void);
+void backstab_intro_play(void);
 extern so_module g_mod_game;
 
 #define SD "com/gameloft/android/ANMP/GloftSDHM"
@@ -229,13 +230,13 @@ static void key_poll(PadState *p0, PadState *p1) {
   if (b & HidNpadButton_Down) sy = -1.0f;
   float mg = __builtin_sqrtf(sx * sx + sy * sy); if (mg > 1.0f) { sx /= mg; sy /= mg; } int active = (sx * sx + sy * sy) > 0.16f;
   void *obj = jni_class(SD "/GameGLSurfaceView")->obj;
-  const int CX = 228, CY = 770, R = 220, BX = 1725, BY = 960;
+  const int CX = 300, CY = 800, R = 240, BX = 1725, BY = 960;
   if (active) {
-    int x = CX + (int)(sx * R), y = CY - (int)(sy * R); if (x < 8) x = 8; if (y < 8) y = 8; if (x > 1912) x = 1912; if (y > 1072) y = 1072;
+    float m2 = __builtin_sqrtf(sx * sx + sy * sy); float gk = m2 * 1.3f; if (gk > 1.0f) gk = 1.0f; float nx = m2 > 0.001f ? sx / m2 : 0.0f, ny = m2 > 0.001f ? sy / m2 : 0.0f; int x = CX + (int)(nx * gk * R), y = CY - (int)(ny * gk * R); if (x < 8) x = 8; if (y < 8) y = 8; if (x > 1912) x = 1912; if (y > 1072) y = 1072;
     if (!sdown) {
       fn(g_jni_env, obj, 1, CX, CY, 2);
       sdown = 1; lx = CX; ly = CY;
-      if (logged < 6) { debugPrintf("[padtouch] stick down\n"); logged++; }
+      if (logged < 6) { debugPrintf("[padtouch] stick down, push %d/100, knob at %d,%d\n", (int)(m2 * 100), x, y); logged++; }
     }
     if (x != lx || y != ly) { fn(g_jni_env, obj, 2, x, y, 2); lx = x; ly = y; }
   } else if (sdown) {
@@ -243,8 +244,8 @@ static void key_poll(PadState *p0, PadState *p1) {
     sdown = 0;
     if (logged < 6) { debugPrintf("[padtouch] stick up\n"); logged++; }
   }
-  { static int b2down_; int w = (b & (HidNpadButton_B | HidNpadButton_X)) != 0; if (w && !b2down_) { fn(g_jni_env, obj, 1, 1540, 757, 4); b2down_ = 1; } else if (!w && b2down_) { fn(g_jni_env, obj, 0, 1540, 757, 4); b2down_ = 0; } }
-  int atk = (b & (HidNpadButton_A | HidNpadButton_R)) != 0;
+  { static int b2down_; int w = (b & HidNpadButton_B) != 0; if (w && !b2down_) { fn(g_jni_env, obj, 1, 1540, 757, 4); b2down_ = 1; } else if (!w && b2down_) { fn(g_jni_env, obj, 0, 1540, 757, 4); b2down_ = 0; } }
+  { static int cdown_; int w = (b & HidNpadButton_X) != 0; if (w && !cdown_) { fn(g_jni_env, obj, 1, 1758, 618, 7); cdown_ = 1; } else if (!w && cdown_) { fn(g_jni_env, obj, 0, 1758, 618, 7); cdown_ = 0; } } int atk = (b & (HidNpadButton_A | HidNpadButton_R)) != 0;
   if (atk && !bdown) {
     fn(g_jni_env, obj, 1, BX, BY, 3); bdown = 1;
     if (logged < 6) { debugPrintf("[padtouch] attack down\n"); logged++; }
@@ -261,7 +262,7 @@ static void key_poll(PadState *p0, PadState *p1) {
   if (!fn) return;
   float s0[4] = {0, 0, 0, 0}, s1[4] = {0, 0, 0, 0};
   u64 b = rt_pad_read(p0, s0) | rt_pad_read(p1, s1);
-  float rx = s0[2] != 0 ? s0[2] : s1[2], ry = s0[3] != 0 ? s0[3] : s1[3];
+  float rx = s0[2] != 0 ? s0[2] : s1[2], ry = s0[3] != 0 ? s0[3] : s1[3]; { static int once_; if (!once_) { once_ = 1; debugPrintf("[padtouch] pad_extra running\n"); } }
   void *obj = jni_class(SD "/GameGLSurfaceView")->obj;
   int z = (b & (HidNpadButton_ZL | HidNpadButton_ZR)) != 0;
   if (z && !zdown) {
@@ -277,7 +278,7 @@ static void key_poll(PadState *p0, PadState *p1) {
       fn(g_jni_env, obj, 1, cx, cy, 6); camdown = 1;
       if (logged < 6) { debugPrintf("[padtouch] camera down\n"); logged++; }
     }
-    cx -= (int)(rx * 22.0f); cy += (int)(ry * 22.0f);
+    cx -= (int)(rx * 12.0f); cy += (int)(ry * 12.0f);
     int out = (cx < 1000 || cx > 1850 || cy < 150 || cy > 650);
     if (cx < 1000) cx = 1000; if (cx > 1850) cx = 1850;
     if (cy < 150) cy = 150; if (cy > 650) cy = 650;
@@ -288,11 +289,11 @@ static void key_poll(PadState *p0, PadState *p1) {
   }
 }
 
-#define CAM_INVERT_Y 1
+#define CAM_INVERT_Y 0
 #define CAM_SENS 0.35f
 #define LS_X 242
 #define LS_Y 850
-#define LS_R 154
+#define LS_R 240
 #define RS_X 1324
 #define RS_Y 474
 #define RS_R 84
@@ -333,9 +334,9 @@ static void pad_poll(PadState *p0, PadState *p1) {
   float lm = sqrtf(lx * lx + ly * ly);
   if (lm > 0.2f) {
     if (lm > 1.0f) { lx /= lm; ly /= lm; }
-    int tx = LS_X + (int)(lx * LS_R), ty = LS_Y - (int)(ly * LS_R);
+    float lm2 = sqrtf(lx * lx + ly * ly); float gk2 = lm2 * 1.3f; if (gk2 > 1.0f) gk2 = 1.0f; int tx = LS_X + (int)((lx / lm2) * gk2 * LS_R), ty = LS_Y - (int)((ly / lm2) * gk2 * LS_R); if (tx < 8) tx = 8; if (tx > 1912) tx = 1912; if (ty < 8) ty = 8; if (ty > 1072) ty = 1072;
     if (!lon) { fn(g_jni_env, obj, 1, LS_X, LS_Y, 11); lon = 1; }
-    if (tx != lx0 || ty != ly0) { fn(g_jni_env, obj, 2, tx, ty, 11); lx0 = tx; ly0 = ty; }
+    { static int sl_; if ((tx != lx0 || ty != ly0) && sl_ < 12) { debugPrintf("[pad] stick push %d/100 -> %d,%d\n", (int)(lm * 100), tx, ty); sl_++; } } if (tx != lx0 || ty != ly0) { fn(g_jni_env, obj, 2, tx, ty, 11); lx0 = tx; ly0 = ty; }
   } else if (lon) {
     fn(g_jni_env, obj, 0, lx0, ly0, 11); lon = 0; lx0 = ly0 = -1;
   }
@@ -390,6 +391,7 @@ void port_run(void) {
   if (!backstab_egl_ensure())
     fatal_error("No GLES 2 context could be made.\nSee debug.log.");
   debugPrintf("[boot] GLES 2 context ready\n");
+  backstab_intro_play();
   log_flush_ring();
 
   // skipped, the installer is Java's DRM flow:   native_call0(SDSYM "installer_GameInstaller_initNative", SD "/installer/GameInstaller");
@@ -510,6 +512,12 @@ void port_run(void) {
 
   debugPrintf("[boot] fifth milestone: main loop ran and exited cleanly\n");
   log_flush_ring();}
+
+
+
+
+
+
 
 
 
