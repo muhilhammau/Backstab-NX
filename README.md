@@ -19,7 +19,7 @@ An unofficial Nintendo Switch wrapper/port of Gameloft's Android game.
 
 ## About
 
-`Backstab_nx` runs the original 32-bit Android version of **Backstab HD** (also known as **Assassin's Creed Pirates**) on Nintendo Switch, using the open-source [vita2hos](https://github.com/vita2hos) toolchain and [android32](https://github.com/aks796/android32) runtime.
+`Backstab_nx` runs the original 32-bit Android version of **Backstab HD** on Nintendo Switch, using the open-source [vita2hos](https://github.com/vita2hos) toolchain and [android32](https://github.com/aks796/android32) runtime.
 
 The supported game build is:
 
